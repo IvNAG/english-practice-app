@@ -108,8 +108,37 @@ const dynamicData = generateVerbToBe();
 // 5. Exportamos la base de datos a la app
 const database = {
     "verb_to_be": {
-        title: "1. Verb to be (Aleatorio Masivo)",
-        theory: "El verbo 'to be' significa 'ser' o 'estar'.<br><br><b>Formas en presente:</b><br>• I <b>am</b><br>• He, She, It <b>is</b><br>• You, We, They <b>are</b><br><br><i>¡Nota: Tienes miles de combinaciones posibles. Recarga la página para ver ejercicios nuevos!</i>",
+        title: "1. Verb to be (Oxford Standard)",
+        theory: `
+            <p>Según la <b>Oxford Learner's Grammar</b>, usamos el verbo <b>to be</b> para identificar personas y cosas, hablar de profesiones, nacionalidades, edades y ubicaciones.</p>
+            
+            <h3 style="color: #2563eb; margin-bottom: 5px;">✅ Affirmative (Full form ➔ Short form)</h3>
+            <ul style="margin-top: 0;">
+                <li><b>I am ➔ I'm</b> (<i>I'm twenty years old.</i>)</li>
+                <li><b>He / She / It is ➔ He's / She's / It's</b> (<i>She's an engineer.</i>)</li>
+                <li><b>You / We / They are ➔ You're / We're / They're</b> (<i>They're in the laboratory.</i>)</li>
+            </ul>
+
+            <h3 style="color: #ef4444; margin-bottom: 5px;">❌ Negative (Full form ➔ Short form)</h3>
+            <p style="margin-top: 0; font-size: 0.9em; color: #64748b;">En inglés hablado y escrito informal, casi siempre usamos las Short Forms.</p>
+            <ul style="margin-top: 0;">
+                <li><b>I am not ➔ I'm not</b> (<i>I'm not a teacher.</i>)</li>
+                <li><b>He / She / It is not ➔ He / She / It isn't</b> (<i>It isn't a new computer.</i>)</li>
+                <li><b>You / We / They are not ➔ You / We / They aren't</b> (<i>We aren't late.</i>)</li>
+            </ul>
+
+            <h3 style="color: #22c55e; margin-bottom: 5px;">❓ Questions & Short answers</h3>
+            <p style="margin-top: 0; font-size: 0.9em; color: #64748b;">Para preguntar invertimos el orden (Verbo + Sujeto). En las respuestas cortas afirmativas <b>nunca</b> usamos contracciones.</p>
+            <ul style="margin-top: 0;">
+                <li><b>Am I...?</b> ➔ <i>Yes, I am. / No, I'm not.</i></li>
+                <li><b>Is he/she/it...?</b> ➔ <i>Yes, it is. / No, it isn't.</i></li>
+                <li><b>Are you/we/they...?</b> ➔ <i>Yes, we are. / No, we aren't.</i></li>
+            </ul>
+
+            <p style="background: #e2e8f0; padding: 10px; border-radius: 6px; font-size: 0.9em;">
+                <i><b>Tip:</b> Tienes miles de combinaciones posibles generadas aleatoriamente en los ejercicios de abajo. Recarga la página para practicar oraciones nuevas.</i>
+            </p>
+        `,
         listening: dynamicData.listening,
         speaking: dynamicData.speaking,
         grammar: dynamicData.grammar,
