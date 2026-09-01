@@ -1,5 +1,5 @@
 let currentTopic = "";
-let currentRecognition = null; // Variable global para controlar el micrófono
+let currentRecognition = null;
 
 function initApp() {
     const selector = document.getElementById('topic-selector');
@@ -28,45 +28,47 @@ function loadTopic(topicId) {
         </div>
     `;
 
-    // Generar sección Listening
+    // 🎧 Listening (Solucionado el [object Object] para leer la fonética)
     html += `<div class="card"><h2>🎧 Listening (Escucha)</h2>`;
-    data.listening.forEach((text, index) => {
+    data.listening.forEach((item, index) => {
         html += `
             <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
-                <p><i>"${text}"</i></p>
-                <button onclick="playAudio('${text}')">▶ Reproducir Audio</button>
+                <p style="font-size: 1.1em; margin-bottom: 5px;"><i>"${item.text}"</i></p>
+                <p style="color: #0ea5e9; font-family: monospace; font-size: 0.9em; margin-top: 0;">${item.ipa}</p>
+                <button onclick="playAudio('${item.text.replace(/'/g, "\\'")}')">▶ Reproducir Audio</button>
             </div>`;
     });
     html += `</div>`;
 
-    // Generar sección Speaking (AQUÍ ESTÁ EL NUEVO BOTÓN DE DETENER)
+    // 🎙️ Speaking (Solucionado el [object Object] para leer la fonética)
     html += `<div class="card"><h2>🎙️ Speaking (Pronunciación)</h2>`;
-    data.speaking.forEach((text, index) => {
+    data.speaking.forEach((item, index) => {
         html += `
             <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
-                <p><b>"${text}"</b></p>
-                <button id="btn-record-${index}" onclick="startRecording('${text}', 'mic-feedback-${index}', ${index})">🎤 Hablar</button>
+                <p style="font-size: 1.1em; margin-bottom: 5px;"><b>"${item.text}"</b></p>
+                <p style="color: #0ea5e9; font-family: monospace; font-size: 0.9em; margin-top: 0;">${item.ipa}</p>
+                <button id="btn-record-${index}" onclick="startRecording('${item.text.replace(/'/g, "\\'")}', 'mic-feedback-${index}', ${index})">🎤 Hablar</button>
                 <button id="btn-stop-${index}" style="display:none; background-color: #ef4444;" onclick="stopRecording(${index})">⏹ Detener y Evaluar</button>
                 <p id="mic-feedback-${index}" class="feedback" style="display:none;"></p>
             </div>`;
     });
     html += `</div>`;
 
-    // Generar sección Grammar
+    // ✍️ Gramática
     html += `<div class="card"><h2>✍️ Quiz de Gramática</h2>`;
     data.grammar.forEach((item, index) => {
         html += `
             <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
                 <p>${index + 1}. ${item.question}</p>
                 <div class="grammar-options">
-                    ${item.options.map(opt => `<button class="grammar-btn" onclick="checkGrammar('${opt}', '${item.answer}', 'gram-feedback-${index}')">${opt}</button>`).join('')}
+                    ${item.options.map(opt => `<button class="grammar-btn" onclick="checkGrammar('${opt}', '${item.answer}', 'gram-feedback-${index}', '${item.explanation.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}
                 </div>
-                <div id="gram-feedback-${index}" class="feedback"></div>
+                <div id="gram-feedback-${index}" class="feedback" style="display:none; padding: 12px; margin-top: 10px; line-height: 1.5;"></div>
             </div>`;
     });
     html += `</div>`;
 
-    // Generar sección Order Game
+    // 🧩 Order Game
     if (data.order_game) {
         html += `<div class="card"><h2>🧩 Juego: Ordena la oración</h2>`;
         data.order_game.forEach((item, index) => {
@@ -74,7 +76,7 @@ function loadTopic(topicId) {
                 <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
                     <p>Haz clic en las palabras en el orden correcto:</p>
                     <div class="grammar-options" id="word-bank-${index}">
-                        ${item.words.map(word => `<button class="grammar-btn" onclick="addWordToSentence('${word}', ${index}, '${item.answer.replace(/'/g, "\\'")}')">${word}</button>`).join('')}
+                        ${item.words.map(word => `<button class="grammar-btn" onclick="addWordToSentence('${word.replace(/'/g, "\\'")}', ${index}, '${item.answer.replace(/'/g, "\\'")}')">${word}</button>`).join('')}
                     </div>
                     <div style="margin-top: 10px; padding: 10px; background: #e2e8f0; min-height: 24px; border-radius: 6px;" id="sentence-${index}"></div>
                     <button style="margin-top: 10px; background-color: #64748b;" onclick="resetSentence(${index})">🔄 Reiniciar</button>
@@ -87,34 +89,54 @@ function loadTopic(topicId) {
     container.innerHTML = html;
 }
 
-// ==========================================
-// NUEVA LÓGICA DE MICRÓFONO
-// ==========================================
+// 🔴 FILTRO ESTRICTO DE AUDIO (Voz nativa obligatoria)
+function playAudio(text) {
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = 'en-US';
+    speech.rate = 0.85; 
+    
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
 
+    if (englishVoices.length > 0) {
+        const premium = englishVoices.find(v => 
+            v.name.includes('Samantha') || 
+            v.name.includes('Alex') || 
+            v.name.includes('Google') ||
+            v.name.includes('Daniel')
+        );
+        speech.voice = premium || englishVoices[0];
+    } else {
+        speech.lang = 'en-US';
+    }
+    
+    window.speechSynthesis.speak(speech);
+}
+
+window.speechSynthesis.onvoiceschanged = function() {
+    window.speechSynthesis.getVoices();
+};
+
+// MICRÓFONO Y LÓGICA
 function startRecording(expectedText, feedbackId, index) {
     const feedback = document.getElementById(feedbackId);
     const btnRecord = document.getElementById(`btn-record-${index}`);
     const btnStop = document.getElementById(`btn-stop-${index}`);
-    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        feedback.innerHTML = "Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.";
+        feedback.innerHTML = "Tu navegador no soporta reconocimiento de voz.";
         feedback.className = "feedback error";
         feedback.style.display = "block";
         return;
     }
 
-    // Si ya hay una grabación en curso, la detenemos
-    if (currentRecognition) {
-        currentRecognition.stop(); 
-    }
-
+    if (currentRecognition) currentRecognition.stop(); 
+    
     currentRecognition = new SpeechRecognition();
     currentRecognition.lang = 'en-US';
     currentRecognition.interimResults = false;
     
-    // Cambiar interfaz
     feedback.textContent = "Escuchando... (Toca 'Detener' al terminar)";
     feedback.className = "feedback";
     feedback.style.display = "block";
@@ -123,7 +145,6 @@ function startRecording(expectedText, feedbackId, index) {
     
     currentRecognition.start();
 
-    // Cuando el sistema procesa el audio (ya sea automático o al forzar la detención)
     currentRecognition.onresult = function(event) {
         const transcript = event.results[0][0].transcript.toLowerCase().replace(/[.,!?]/g, "").trim();
         const expected = expectedText.toLowerCase().replace(/[.,!?]/g, "").trim();
@@ -137,19 +158,10 @@ function startRecording(expectedText, feedbackId, index) {
         }
         resetMicButtons(index);
     };
-
-    currentRecognition.onerror = function(event) {
-        feedback.innerHTML = `Error al escuchar. Intenta de nuevo.`;
-        feedback.className = "feedback error";
-        resetMicButtons(index);
-    };
-
-    currentRecognition.onend = function() {
-        resetMicButtons(index);
-    };
+    currentRecognition.onerror = function() { resetMicButtons(index); };
+    currentRecognition.onend = function() { resetMicButtons(index); };
 }
 
-// Forzar la detención del micrófono y la evaluación
 function stopRecording(index) {
     const feedback = document.getElementById(`mic-feedback-${index}`);
     if (currentRecognition) {
@@ -158,7 +170,6 @@ function stopRecording(index) {
     }
 }
 
-// Restaurar los botones a su estado original
 function resetMicButtons(index) {
     const btnRecord = document.getElementById(`btn-record-${index}`);
     const btnStop = document.getElementById(`btn-stop-${index}`);
@@ -168,58 +179,19 @@ function resetMicButtons(index) {
     }
 }
 
-// ==========================================
-// RESTO DEL CÓDIGO (Audio y Gramática)
-// ==========================================
-
-function playAudio(text) {
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-US';
-    speech.rate = 0.85; // Un poco más lento para nivel A1
-    
-    // Obtener todas las voces instaladas en el navegador/sistema
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Buscar las voces más naturales y fluidas disponibles
-    const preferredVoices = voices.filter(voice => 
-        voice.name.includes('Google US English') || 
-        voice.name.includes('Samantha') || 
-        voice.name.includes('Alex') ||
-        voice.name.includes('Daniel')
-    );
-
-    // Si encuentra voces premium, usa la primera. Si no, busca cualquier voz en inglés.
-    if (preferredVoices.length > 0) {
-        speech.voice = preferredVoices[0];
-    } else {
-        const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
-        if (englishVoices.length > 0) {
-            speech.voice = englishVoices[0];
-        }
-    }
-
-    window.speechSynthesis.speak(speech);
-}
-
-// Truco para forzar al navegador a cargar las voces en segundo plano al abrir la app
-window.speechSynthesis.onvoiceschanged = function() {
-    window.speechSynthesis.getVoices();
-};
-
-function checkGrammar(selected, correct, feedbackId) {
+function checkGrammar(selected, correct, feedbackId, explanation) {
     const feedback = document.getElementById(feedbackId);
     feedback.style.display = "block";
     if (selected === correct) {
-        feedback.textContent = "¡Correcto! ✅";
+        feedback.innerHTML = "¡Correcto! ✅";
         feedback.className = "feedback success";
     } else {
-        feedback.textContent = "Incorrecto ❌";
+        feedback.innerHTML = `<span style="font-size: 1.1em;">Incorrecto ❌</span><br><br><b>Respuesta correcta:</b> "${correct}"<br><b>¿Por qué?</b> ${explanation}`;
         feedback.className = "feedback error";
     }
 }
 
 let userSentences = {};
-
 function addWordToSentence(word, index, correctAnswer) {
     if (!userSentences[index]) userSentences[index] = [];
     userSentences[index].push(word);
@@ -227,18 +199,16 @@ function addWordToSentence(word, index, correctAnswer) {
     const sentenceDiv = document.getElementById(`sentence-${index}`);
     const currentSentence = userSentences[index].join(' ');
     sentenceDiv.textContent = currentSentence;
-    
     event.target.style.display = 'none';
 
-    const wordsInCorrect = correctAnswer.split(' ').length;
-    if (userSentences[index].length === wordsInCorrect) {
+    if (userSentences[index].length === correctAnswer.split(' ').length) {
         const feedback = document.getElementById(`order-feedback-${index}`);
         feedback.style.display = "block";
         if (currentSentence === correctAnswer) {
             feedback.textContent = "¡Perfecto! ✅";
             feedback.className = "feedback success";
         } else {
-            feedback.textContent = "Orden incorrecto. Toca 'Reiniciar' e intenta de nuevo ❌";
+            feedback.textContent = "Orden incorrecto. Toca 'Reiniciar' ❌";
             feedback.className = "feedback error";
         }
     }
@@ -248,11 +218,8 @@ function resetSentence(index) {
     userSentences[index] = [];
     document.getElementById(`sentence-${index}`).textContent = '';
     document.getElementById(`order-feedback-${index}`).style.display = 'none';
-    
     const buttons = document.getElementById(`word-bank-${index}`).getElementsByTagName('button');
-    for(let btn of buttons) {
-        btn.style.display = 'inline-block';
-    }
+    for(let btn of buttons) btn.style.display = 'inline-block';
 }
 
 window.onload = initApp;
