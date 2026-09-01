@@ -89,34 +89,41 @@ function loadTopic(topicId) {
     container.innerHTML = html;
 }
 
-// 🔴 FILTRO ESTRICTO DE AUDIO (Voz nativa obligatoria)
+// 🔴 FILTRO SÚPER ESTRICTO DE AUDIO
 function playAudio(text) {
+    // 1. Cancelar cualquier audio trabado en la memoria (Típico bug de Mac/Safari)
+    window.speechSynthesis.cancel();
+
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-US';
+    speech.lang = 'en-US'; // Exigimos el idioma al motor base
     speech.rate = 0.85; 
     
     const voices = window.speechSynthesis.getVoices();
-    const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+    
+    // 2. Filtramos buscando 'en-' o 'en_' (algunos navegadores usan guion bajo)
+    const englishVoices = voices.filter(voice => 
+        voice.lang.includes('en-') || 
+        voice.lang.includes('en_') ||
+        voice.lang === 'en'
+    );
 
     if (englishVoices.length > 0) {
+        // 3. Priorizamos explícitamente las voces nativas de Apple (Mac/iOS) y Google
         const premium = englishVoices.find(v => 
             v.name.includes('Samantha') || 
             v.name.includes('Alex') || 
-            v.name.includes('Google') ||
-            v.name.includes('Daniel')
+            v.name.includes('Daniel') ||
+            v.name.includes('Fred') ||
+            v.name.includes('Victoria') ||
+            v.name.includes('Google')
         );
+        
+        // Si encuentra la premium la usa, sino usa la primera que sea 100% inglés
         speech.voice = premium || englishVoices[0];
-    } else {
-        speech.lang = 'en-US';
     }
     
     window.speechSynthesis.speak(speech);
 }
-
-window.speechSynthesis.onvoiceschanged = function() {
-    window.speechSynthesis.getVoices();
-};
-
 // MICRÓFONO Y LÓGICA
 function startRecording(expectedText, feedbackId, index) {
     const feedback = document.getElementById(feedbackId);
