@@ -1,258 +1,118 @@
-let currentTopic = "";
-let currentRecognition = null; // Variable global para controlar el micrófono
-
-function initApp() {
-    const selector = document.getElementById('topic-selector');
-    selector.innerHTML = '';
-    
-    for (const key in database) {
-        const option = document.createElement('option');
-        option.value = key;
-        option.textContent = database[key].title;
-        selector.appendChild(option);
-    }
-    
-    const firstKey = Object.keys(database)[0];
-    loadTopic(firstKey);
+// 1. Función auxiliar para elegir palabras al azar
+function getRandom(array) {
+    return array[Math.floor(Math.random() * array.length)];
 }
 
-function loadTopic(topicId) {
-    currentTopic = topicId;
-    const data = database[topicId];
-    const container = document.getElementById('app-content');
-    
-    let html = `
-        <div class="card">
-            <h2>📖 Gramática</h2>
-            <p>${data.theory}</p>
-        </div>
-    `;
+// 2. MEGA BANCO DE VOCABULARIO A1
+const subjectsI = ["I"];
 
-    // Generar sección Listening
-    html += `<div class="card"><h2>🎧 Listening (Escucha)</h2>`;
-    data.listening.forEach((text, index) => {
-        html += `
-            <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
-                <p><i>"${text}"</i></p>
-                <button onclick="playAudio('${text}')">▶ Reproducir Audio</button>
-            </div>`;
-    });
-    html += `</div>`;
+const subjectsIs = [
+    "My mother", "His brother", "The teacher", "The doctor", "The student", "My friend", "The engineer", "The programmer",
+    "The car", "The house", "The book", "The phone", "The cat", "The dog", "The coffee", "The weather", "The train",
+    "The operating system", "My PS5", "Vegeta", "My black backpack", "The physics exam", "The algebra test", "The server", "The algorithm", "My laptop", "The internet connection"
+];
 
-    // Generar sección Speaking (AQUÍ ESTÁ EL NUEVO BOTÓN DE DETENER)
-    html += `<div class="card"><h2>🎙️ Speaking (Pronunciación)</h2>`;
-    data.speaking.forEach((text, index) => {
-        html += `
-            <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
-                <p><b>"${text}"</b></p>
-                <button id="btn-record-${index}" onclick="startRecording('${text}', 'mic-feedback-${index}', ${index})">🎤 Hablar</button>
-                <button id="btn-stop-${index}" style="display:none; background-color: #ef4444;" onclick="stopRecording(${index})">⏹ Detener y Evaluar</button>
-                <p id="mic-feedback-${index}" class="feedback" style="display:none;"></p>
-            </div>`;
-    });
-    html += `</div>`;
+const subjectsAre = [
+    "We", "They", "My parents", "The students", "The teachers", "My friends", "The children", "The doctors",
+    "The computers", "The books", "The keys", "The cars", "The cats", "The dogs",
+    "The servers", "The engineering students", "The algorithms", "The gym weights", "The hard drives"
+];
 
-    // Generar sección Grammar
-    html += `<div class="card"><h2>✍️ Quiz de Gramática</h2>`;
-    data.grammar.forEach((item, index) => {
-        html += `
-            <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
-                <p>${index + 1}. ${item.question}</p>
-                <div class="grammar-options">
-                    ${item.options.map(opt => `<button class="grammar-btn" onclick="checkGrammar('${opt}', '${item.answer}', 'gram-feedback-${index}')">${opt}</button>`).join('')}
-                </div>
-                <div id="gram-feedback-${index}" class="feedback"></div>
-            </div>`;
-    });
-    html += `</div>`;
+const complementsPlaces = [
+    "at home.", "at school.", "in the park.", "in the hospital.", "in the city.", "on the table.", "in the room.", "at work.", "in the garden.", "under the desk.",
+    "in Corrientes.", "in Chaco.", "at the gym.", "in the laboratory.", "at the university."
+];
 
-    // Generar sección Order Game
-    if (data.order_game) {
-        html += `<div class="card"><h2>🧩 Juego: Ordena la oración</h2>`;
-        data.order_game.forEach((item, index) => {
-            html += `
-                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
-                    <p>Haz clic en las palabras en el orden correcto:</p>
-                    <div class="grammar-options" id="word-bank-${index}">
-                        ${item.words.map(word => `<button class="grammar-btn" onclick="addWordToSentence('${word}', ${index}, '${item.answer.replace(/'/g, "\\'")}')">${word}</button>`).join('')}
-                    </div>
-                    <div style="margin-top: 10px; padding: 10px; background: #e2e8f0; min-height: 24px; border-radius: 6px;" id="sentence-${index}"></div>
-                    <button style="margin-top: 10px; background-color: #64748b;" onclick="resetSentence(${index})">🔄 Reiniciar</button>
-                    <div id="order-feedback-${index}" class="feedback"></div>
-                </div>`;
-        });
-        html += `</div>`;
-    }
+const complementsAdjectives = [
+    "happy.", "sad.", "big.", "small.", "tall.", "short.", "hot.", "cold.", "expensive.", "cheap.", "beautiful.", "good.", "bad.", "easy.", "hard.", "tired.", "hungry.", "thirsty.", "new.", "old.",
+    "online.", "offline.", "very fast.", "extremely heavy.", "ready.", "complex.", "difficult.", "broken."
+];
 
-    container.innerHTML = html;
-}
+const complementsNouns = [
+    "a doctor.", "a teacher.", "a good friend.", "a student.", "a happy person.",
+    "a great warrior.", "an engineering student.", "a complex algorithm.", "a good programmer.", "a cybersecurity expert."
+];
 
-// ==========================================
-// NUEVA LÓGICA DE MICRÓFONO
-// ==========================================
+const complementsPluralNouns = [
+    "good friends.", "students.", "teachers.", "engineers.", "gamers.", "good people."
+];
 
-function startRecording(expectedText, feedbackId, index) {
-    const feedback = document.getElementById(feedbackId);
-    const btnRecord = document.getElementById(`btn-record-${index}`);
-    const btnStop = document.getElementById(`btn-stop-${index}`);
-    
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        feedback.innerHTML = "Tu navegador no soporta reconocimiento de voz. Usa Google Chrome.";
-        feedback.className = "feedback error";
-        feedback.style.display = "block";
-        return;
-    }
+// 3. Motor Generador de Ejercicios
+function generateVerbToBe() {
+    let listening = [];
+    let speaking = [];
+    let grammar = [];
+    let order_game = [];
 
-    // Si ya hay una grabación en curso, la detenemos
-    if (currentRecognition) {
-        currentRecognition.stop(); 
-    }
-
-    currentRecognition = new SpeechRecognition();
-    currentRecognition.lang = 'en-US';
-    currentRecognition.interimResults = false;
-    
-    // Cambiar interfaz
-    feedback.textContent = "Escuchando... (Toca 'Detener' al terminar)";
-    feedback.className = "feedback";
-    feedback.style.display = "block";
-    btnRecord.style.display = "none";
-    btnStop.style.display = "inline-block";
-    
-    currentRecognition.start();
-
-    // Cuando el sistema procesa el audio (ya sea automático o al forzar la detención)
-    currentRecognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript.toLowerCase().replace(/[.,!?]/g, "").trim();
-        const expected = expectedText.toLowerCase().replace(/[.,!?]/g, "").trim();
+    for (let i = 0; i < 6; i++) {
+        let isSubj = getRandom(subjectsIs);
+        let areSubj = getRandom(subjectsAre);
         
-        if (transcript === expected) {
-            feedback.innerHTML = `¡Excelente! Escuché: "${transcript}"`;
-            feedback.className = "feedback success";
+        let compForIs = getRandom([...complementsPlaces, ...complementsAdjectives, ...complementsNouns]);
+        let compForAre = getRandom([...complementsPlaces, ...complementsAdjectives, ...complementsPluralNouns]);
+        let compForI = getRandom([...complementsPlaces, ...complementsAdjectives, ...complementsNouns]);
+
+        let listenSentence = `${isSubj} is ${compForIs}`;
+        let speakSentence = `${areSubj} are ${compForAre}`;
+        let iSentence = `I am ${compForI}`;
+
+        listening.push(listenSentence);
+        speaking.push(speakSentence);
+
+        // Generamos un quiz gramatical aleatorio CON EXPLICACIONES
+        let randomQuizType = Math.random();
+        if (randomQuizType < 0.33) {
+            grammar.push({ 
+                question: `${isSubj} ___ ${compForIs}`, 
+                options: ["am", "is", "are"], 
+                answer: "is",
+                explanation: `El sujeto "${isSubj}" actúa como tercera persona en singular (equivalente a he, she o it), por lo que siempre debe ir acompañado del verbo "is".`
+            });
+        } else if (randomQuizType < 0.66) {
+            grammar.push({ 
+                question: `${areSubj} ___ ${compForAre}`, 
+                options: ["am", "is", "are"], 
+                answer: "are",
+                explanation: `El sujeto "${areSubj}" representa un plural (equivalente a we, you o they), por lo que siempre le corresponde la forma "are".`
+            });
         } else {
-            feedback.innerHTML = `Casi. Escuché: "${transcript}". Intenta de nuevo.`;
-            feedback.className = "feedback error";
+            grammar.push({ 
+                question: `I ___ ${compForI}`, 
+                options: ["am", "is", "are"], 
+                answer: "am",
+                explanation: `El pronombre "I" (Yo) es exclusivo en inglés y siempre, sin excepción, utiliza la forma "am" del verbo to be en presente.`
+            });
         }
-        resetMicButtons(index);
-    };
 
-    currentRecognition.onerror = function(event) {
-        feedback.innerHTML = `Error al escuchar. Intenta de nuevo.`;
-        feedback.className = "feedback error";
-        resetMicButtons(index);
-    };
+        let sentenceToScramble = "";
+        let scrambleChoice = Math.random();
+        if(scrambleChoice < 0.33) sentenceToScramble = listenSentence;
+        else if(scrambleChoice < 0.66) sentenceToScramble = speakSentence;
+        else sentenceToScramble = iSentence;
 
-    currentRecognition.onend = function() {
-        resetMicButtons(index);
-    };
-}
-
-// Forzar la detención del micrófono y la evaluación
-function stopRecording(index) {
-    const feedback = document.getElementById(`mic-feedback-${index}`);
-    if (currentRecognition) {
-        feedback.textContent = "Evaluando tu pronunciación...";
-        currentRecognition.stop(); 
-    }
-}
-
-// Restaurar los botones a su estado original
-function resetMicButtons(index) {
-    const btnRecord = document.getElementById(`btn-record-${index}`);
-    const btnStop = document.getElementById(`btn-stop-${index}`);
-    if (btnRecord && btnStop) {
-        btnRecord.style.display = "inline-block";
-        btnStop.style.display = "none";
-    }
-}
-
-// ==========================================
-// RESTO DEL CÓDIGO (Audio y Gramática)
-// ==========================================
-
-function playAudio(text) {
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-US';
-    speech.rate = 0.85; // Un poco más lento para nivel A1
-    
-    // Obtener todas las voces instaladas en el navegador/sistema
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Buscar las voces más naturales y fluidas disponibles
-    const preferredVoices = voices.filter(voice => 
-        voice.name.includes('Google US English') || 
-        voice.name.includes('Samantha') || 
-        voice.name.includes('Alex') ||
-        voice.name.includes('Daniel')
-    );
-
-    // Si encuentra voces premium, usa la primera. Si no, busca cualquier voz en inglés.
-    if (preferredVoices.length > 0) {
-        speech.voice = preferredVoices[0];
-    } else {
-        const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
-        if (englishVoices.length > 0) {
-            speech.voice = englishVoices[0];
-        }
+        let wordsArray = sentenceToScramble.split(" ");
+        let shuffledWords = [...wordsArray].sort(() => Math.random() - 0.5);
+        
+        order_game.push({
+            words: shuffledWords,
+            answer: sentenceToScramble
+        });
     }
 
-    window.speechSynthesis.speak(speech);
+    return { listening, speaking, grammar, order_game };
 }
 
-// Truco para forzar al navegador a cargar las voces en segundo plano al abrir la app
-window.speechSynthesis.onvoiceschanged = function() {
-    window.speechSynthesis.getVoices();
+// 4. Ejecutamos el generador
+const dynamicData = generateVerbToBe();
+
+// 5. Exportamos la base de datos a la app
+const database = {
+    "verb_to_be": {
+        title: "1. Verb to be (Aleatorio Masivo)",
+        theory: "El verbo 'to be' significa 'ser' o 'estar'.<br><br><b>Formas en presente:</b><br>• I <b>am</b><br>• He, She, It <b>is</b><br>• You, We, They <b>are</b><br><br><i>¡Nota: Tienes miles de combinaciones posibles. Recarga la página para ver ejercicios nuevos!</i>",
+        listening: dynamicData.listening,
+        speaking: dynamicData.speaking,
+        grammar: dynamicData.grammar,
+        order_game: dynamicData.order_game
+    }
 };
-
-function checkGrammar(selected, correct, feedbackId) {
-    const feedback = document.getElementById(feedbackId);
-    feedback.style.display = "block";
-    if (selected === correct) {
-        feedback.textContent = "¡Correcto! ✅";
-        feedback.className = "feedback success";
-    } else {
-        feedback.textContent = "Incorrecto ❌";
-        feedback.className = "feedback error";
-    }
-}
-
-let userSentences = {};
-
-function addWordToSentence(word, index, correctAnswer) {
-    if (!userSentences[index]) userSentences[index] = [];
-    userSentences[index].push(word);
-    
-    const sentenceDiv = document.getElementById(`sentence-${index}`);
-    const currentSentence = userSentences[index].join(' ');
-    sentenceDiv.textContent = currentSentence;
-    
-    event.target.style.display = 'none';
-
-    const wordsInCorrect = correctAnswer.split(' ').length;
-    if (userSentences[index].length === wordsInCorrect) {
-        const feedback = document.getElementById(`order-feedback-${index}`);
-        feedback.style.display = "block";
-        if (currentSentence === correctAnswer) {
-            feedback.textContent = "¡Perfecto! ✅";
-            feedback.className = "feedback success";
-        } else {
-            feedback.textContent = "Orden incorrecto. Toca 'Reiniciar' e intenta de nuevo ❌";
-            feedback.className = "feedback error";
-        }
-    }
-}
-
-function resetSentence(index) {
-    userSentences[index] = [];
-    document.getElementById(`sentence-${index}`).textContent = '';
-    document.getElementById(`order-feedback-${index}`).style.display = 'none';
-    
-    const buttons = document.getElementById(`word-bank-${index}`).getElementsByTagName('button');
-    for(let btn of buttons) {
-        btn.style.display = 'inline-block';
-    }
-}
-
-window.onload = initApp;
