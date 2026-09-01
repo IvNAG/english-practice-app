@@ -3,48 +3,61 @@ function getRandom(array) {
     return array[Math.floor(Math.random() * array.length)];
 }
 
-// 2. MEGA BANCO DE VOCABULARIO A1
-const subjectsI = ["I"];
-
+// 2. DICCIONARIO A1 CON PRONUNCIACIÓN FIGURADA (INFORMAL)
 const subjectsIs = [
-    "My mother", "His brother", "The teacher", "The doctor", "The student", "My friend", "The engineer", "The programmer",
-    "The car", "The house", "The book", "The phone", "The cat", "The dog", "The coffee", "The weather", "The train",
-    "The operating system", "My PS5", "Vegeta", "My black backpack", "The physics exam", "The algebra test", "The server", "The algorithm", "My laptop", "The internet connection"
+    { en: "The server", ipa: "da ser-ver" },
+    { en: "My laptop", ipa: "mai lap-top" },
+    { en: "The algorithm", ipa: "di al-go-ridm" },
+    { en: "Vegeta", ipa: "ve-yi-ta" },
+    { en: "The physics exam", ipa: "da fi-siks ex-am" },
+    { en: "My backpack", ipa: "mai bak-pak" },
+    { en: "The teacher", ipa: "da ti-cher" },
+    { en: "The student", ipa: "da stu-dent" }
 ];
 
 const subjectsAre = [
-    "We", "They", "My parents", "The students", "The teachers", "My friends", "The children", "The doctors",
-    "The computers", "The books", "The keys", "The cars", "The cats", "The dogs",
-    "The servers", "The engineering students", "The algorithms", "The gym weights", "The hard drives"
+    { en: "We", ipa: "wi" },
+    { en: "They", ipa: "dei" },
+    { en: "The engineering students", ipa: "di en-yi-ni-ring stu-dents" },
+    { en: "The servers", ipa: "da ser-vers" },
+    { en: "My friends", ipa: "mai frends" }
 ];
 
 const complementsPlaces = [
-    "at home.", "at school.", "in the park.", "in the hospital.", "in the city.", "on the table.", "in the room.", "at work.", "in the garden.", "under the desk.",
-    "in Corrientes.", "in Chaco.", "at the gym.", "in the laboratory.", "at the university."
+    { en: "in Corrientes.", ipa: "in co-rrien-tes." },
+    { en: "in Chaco.", ipa: "in cha-co." },
+    { en: "at the university.", ipa: "at da yu-ni-ver-si-ti." },
+    { en: "in the laboratory.", ipa: "in da la-bo-ra-to-ri." },
+    { en: "at the gym.", ipa: "at da yim." }
 ];
 
 const complementsAdjectives = [
-    "happy.", "sad.", "big.", "small.", "tall.", "short.", "hot.", "cold.", "expensive.", "cheap.", "beautiful.", "good.", "bad.", "easy.", "hard.", "tired.", "hungry.", "thirsty.", "new.", "old.",
-    "online.", "offline.", "very fast.", "extremely heavy.", "ready.", "complex.", "difficult.", "broken."
+    { en: "online.", ipa: "on-lain." },
+    { en: "offline.", ipa: "of-lain." },
+    { en: "very fast.", ipa: "ve-ri fast." },
+    { en: "complex.", ipa: "com-plex." },
+    { en: "ready.", ipa: "re-di." }
 ];
 
 const complementsNouns = [
-    "a doctor.", "a teacher.", "a good friend.", "a student.", "a happy person.",
-    "a great warrior.", "an engineering student.", "a complex algorithm.", "a good programmer.", "a cybersecurity expert."
+    { en: "an engineer.", ipa: "an en-yi-nir." },
+    { en: "a great warrior.", ipa: "a greit wo-rior." },
+    { en: "a cybersecurity expert.", ipa: "a sai-ber-se-kiu-ri-ti ex-pert." }
 ];
 
 const complementsPluralNouns = [
-    "good friends.", "students.", "teachers.", "engineers.", "gamers.", "good people."
+    { en: "good friends.", ipa: "gud frends." },
+    { en: "engineers.", ipa: "en-yi-nirs." }
 ];
 
-// 3. Motor Generador de Ejercicios
+// 3. Motor Generador
 function generateVerbToBe() {
     let listening = [];
     let speaking = [];
     let grammar = [];
     let order_game = [];
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
         let isSubj = getRandom(subjectsIs);
         let areSubj = getRandom(subjectsAre);
         
@@ -52,49 +65,43 @@ function generateVerbToBe() {
         let compForAre = getRandom([...complementsPlaces, ...complementsAdjectives, ...complementsPluralNouns]);
         let compForI = getRandom([...complementsPlaces, ...complementsAdjectives, ...complementsNouns]);
 
-        let listenSentence = `${isSubj} is ${compForIs}`;
-        let speakSentence = `${areSubj} are ${compForAre}`;
-        let iSentence = `I am ${compForI}`;
+        // Unimos el texto en inglés
+        let listenSentence = `${isSubj.en} is ${compForIs.en}`;
+        let speakSentence = `${areSubj.en} are ${compForAre.en}`;
+        let iSentence = `I am ${compForI.en}`;
 
-        listening.push(listenSentence);
-        speaking.push(speakSentence);
+        // Unimos la transcripción figurada
+        let listenIpa = `/${isSubj.ipa} is ${compForIs.ipa}/`;
+        let speakIpa = `/${areSubj.ipa} ar ${compForAre.ipa}/`;
+        let iIpa = `/ai am ${compForI.ipa}/`;
 
-        // Generamos un quiz gramatical aleatorio CON EXPLICACIONES
+        // Guardamos objetos completos
+        listening.push({ text: listenSentence, ipa: listenIpa });
+        speaking.push({ text: speakSentence, ipa: speakIpa });
+
+        // Gramática
         let randomQuizType = Math.random();
         if (randomQuizType < 0.33) {
             grammar.push({ 
-                question: `${isSubj} ___ ${compForIs}`, 
-                options: ["am", "is", "are"], 
-                answer: "is",
-                explanation: `El sujeto "${isSubj}" actúa como tercera persona en singular (equivalente a he, she o it), por lo que siempre debe ir acompañado del verbo "is".`
+                question: `${isSubj.en} ___ ${compForIs.en}`, options: ["am", "is", "are"], answer: "is",
+                explanation: `El sujeto "${isSubj.en}" es tercera persona singular (it, he, she), usa "is".`
             });
         } else if (randomQuizType < 0.66) {
             grammar.push({ 
-                question: `${areSubj} ___ ${compForAre}`, 
-                options: ["am", "is", "are"], 
-                answer: "are",
-                explanation: `El sujeto "${areSubj}" representa un plural (equivalente a we, you o they), por lo que siempre le corresponde la forma "are".`
+                question: `${areSubj.en} ___ ${compForAre.en}`, options: ["am", "is", "are"], answer: "are",
+                explanation: `El sujeto "${areSubj.en}" es plural (we, you, they), usa "are".`
             });
         } else {
             grammar.push({ 
-                question: `I ___ ${compForI}`, 
-                options: ["am", "is", "are"], 
-                answer: "am",
-                explanation: `El pronombre "I" (Yo) es exclusivo en inglés y siempre, sin excepción, utiliza la forma "am" del verbo to be en presente.`
+                question: `I ___ ${compForI.en}`, options: ["am", "is", "are"], answer: "am",
+                explanation: `El pronombre "I" siempre usa "am".`
             });
         }
 
-        let sentenceToScramble = "";
-        let scrambleChoice = Math.random();
-        if(scrambleChoice < 0.33) sentenceToScramble = listenSentence;
-        else if(scrambleChoice < 0.66) sentenceToScramble = speakSentence;
-        else sentenceToScramble = iSentence;
-
-        let wordsArray = sentenceToScramble.split(" ");
-        let shuffledWords = [...wordsArray].sort(() => Math.random() - 0.5);
-        
+        // Juego de ordenar
+        let sentenceToScramble = (Math.random() < 0.5) ? listenSentence : speakSentence;
         order_game.push({
-            words: shuffledWords,
+            words: [...sentenceToScramble.split(" ")].sort(() => Math.random() - 0.5),
             answer: sentenceToScramble
         });
     }
@@ -102,10 +109,9 @@ function generateVerbToBe() {
     return { listening, speaking, grammar, order_game };
 }
 
-// 4. Ejecutamos el generador
 const dynamicData = generateVerbToBe();
 
-// 5. Exportamos la base de datos a la app
+// 4. Exportamos la base de datos (con teoría de Oxford intacta)
 const database = {
     "verb_to_be": {
         title: "1. Verb to be (Oxford Standard)",
@@ -134,10 +140,6 @@ const database = {
                 <li><b>Is he/she/it...?</b> ➔ <i>Yes, it is. / No, it isn't.</i></li>
                 <li><b>Are you/we/they...?</b> ➔ <i>Yes, we are. / No, we aren't.</i></li>
             </ul>
-
-            <p style="background: #e2e8f0; padding: 10px; border-radius: 6px; font-size: 0.9em;">
-                <i><b>Tip:</b> Tienes miles de combinaciones posibles generadas aleatoriamente en los ejercicios de abajo. Recarga la página para practicar oraciones nuevas.</i>
-            </p>
         `,
         listening: dynamicData.listening,
         speaking: dynamicData.speaking,
