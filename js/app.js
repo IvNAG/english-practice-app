@@ -28,7 +28,7 @@ function loadTopic(topicId) {
         </div>
     `;
 
-    // 🎧 Listening (Solucionado el [object Object] para leer la fonética)
+    // 🎧 Listening
     html += `<div class="card"><h2>🎧 Listening (Escucha)</h2>`;
     data.listening.forEach((item, index) => {
         html += `
@@ -40,7 +40,7 @@ function loadTopic(topicId) {
     });
     html += `</div>`;
 
-    // 🎙️ Speaking (Solucionado el [object Object] para leer la fonética)
+    // 🎙️ Speaking
     html += `<div class="card"><h2>🎙️ Speaking (Pronunciación)</h2>`;
     data.speaking.forEach((item, index) => {
         html += `
@@ -54,14 +54,14 @@ function loadTopic(topicId) {
     });
     html += `</div>`;
 
-    // ✍️ Gramática
+    // ✍️ Gramática (Arreglado y mejorado)
     html += `<div class="card"><h2>✍️ Quiz de Gramática</h2>`;
     data.grammar.forEach((item, index) => {
         html += `
             <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
                 <p>${index + 1}. ${item.question}</p>
-                <div class="grammar-options">
-                    ${item.options.map(opt => `<button class="grammar-btn" onclick="checkGrammar('${opt}', '${item.answer}', 'gram-feedback-${index}', '${item.explanation.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}
+                <div class="grammar-options" id="gram-opts-${index}">
+                    ${item.options.map(opt => `<button class="grammar-btn" onclick="checkGrammar('${opt}', ${index})">${opt}</button>`).join('')}
                 </div>
                 <div id="gram-feedback-${index}" class="feedback" style="display:none; padding: 12px; margin-top: 10px; line-height: 1.5;"></div>
             </div>`;
@@ -91,16 +91,12 @@ function loadTopic(topicId) {
 
 // 🔴 FILTRO SÚPER ESTRICTO DE AUDIO
 function playAudio(text) {
-    // 1. Cancelar cualquier audio trabado en la memoria (Típico bug de Mac/Safari)
     window.speechSynthesis.cancel();
-
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-US'; // Exigimos el idioma al motor base
+    speech.lang = 'en-US';
     speech.rate = 0.85; 
     
     const voices = window.speechSynthesis.getVoices();
-    
-    // 2. Filtramos buscando 'en-' o 'en_' (algunos navegadores usan guion bajo)
     const englishVoices = voices.filter(voice => 
         voice.lang.includes('en-') || 
         voice.lang.includes('en_') ||
@@ -108,7 +104,6 @@ function playAudio(text) {
     );
 
     if (englishVoices.length > 0) {
-        // 3. Priorizamos explícitamente las voces nativas de Apple (Mac/iOS) y Google
         const premium = englishVoices.find(v => 
             v.name.includes('Samantha') || 
             v.name.includes('Alex') || 
@@ -117,13 +112,16 @@ function playAudio(text) {
             v.name.includes('Victoria') ||
             v.name.includes('Google')
         );
-        
-        // Si encuentra la premium la usa, sino usa la primera que sea 100% inglés
         speech.voice = premium || englishVoices[0];
     }
     
     window.speechSynthesis.speak(speech);
 }
+
+window.speechSynthesis.onvoiceschanged = function() {
+    window.speechSynthesis.getVoices();
+};
+
 // MICRÓFONO Y LÓGICA
 function startRecording(expectedText, feedbackId, index) {
     const feedback = document.getElementById(feedbackId);
@@ -186,17 +184,49 @@ function resetMicButtons(index) {
     }
 }
 
-function checkGrammar(selected, correct, feedbackId, explanation) {
-    const feedback = document.getElementById(feedbackId);
+// ==========================================
+// NUEVA LÓGICA DE GRAMÁTICA CON BOTÓN REINTENTAR
+// ==========================================
+function checkGrammar(selected, index) {
+    // Buscamos la información directo de la base de datos para evitar errores de comillas en HTML
+    const data = database[currentTopic].grammar[index];
+    const correct = data.answer;
+    const explanation = data.explanation;
+    
+    const feedback = document.getElementById(`gram-feedback-${index}`);
+    const optsContainer = document.getElementById(`gram-opts-${index}`);
+    
     feedback.style.display = "block";
+    
     if (selected === correct) {
         feedback.innerHTML = "¡Correcto! ✅";
         feedback.className = "feedback success";
+        // Congelamos los botones si aciertas para que no se puedan volver a presionar
+        optsContainer.style.pointerEvents = 'none'; 
+        optsContainer.style.opacity = '0.7';
     } else {
-        feedback.innerHTML = `<span style="font-size: 1.1em;">Incorrecto ❌</span><br><br><b>Respuesta correcta:</b> "${correct}"<br><b>¿Por qué?</b> ${explanation}`;
+        // Si te equivocas, ocultamos los botones y mostramos el cuadro rojo
+        optsContainer.style.display = 'none';
+        feedback.innerHTML = `
+            <span style="font-size: 1.1em; color: #b91c1c;"><b>Incorrecto ❌</b></span><br><br>
+            <b>La respuesta correcta era:</b> "${correct}"<br>
+            <b>¿Por qué?</b> ${explanation}<br><br>
+            <button style="background-color: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 1em; margin-top: 5px;" onclick="retryGrammar(${index})">🔄 Reintentar</button>
+        `;
         feedback.className = "feedback error";
     }
 }
+
+// Función que resetea la pregunta cuando presionas "Reintentar"
+function retryGrammar(index) {
+    const feedback = document.getElementById(`gram-feedback-${index}`);
+    const optsContainer = document.getElementById(`gram-opts-${index}`);
+    
+    feedback.style.display = "none";
+    optsContainer.style.display = "block"; // Vuelve a mostrar las opciones originales
+}
+
+// ==========================================
 
 let userSentences = {};
 function addWordToSentence(word, index, correctAnswer) {
